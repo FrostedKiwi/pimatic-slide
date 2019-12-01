@@ -45,7 +45,8 @@ module.exports = (env) ->
 								device._setDimlevel(slide.device_info.pos * 100)
 						)
 					)
-				)
+				else
+					env.logger.error("Slide API error: " + response.body.message)
 			)
 			.catch((err) =>
 				env.logger.error(err)
@@ -68,7 +69,7 @@ module.exports = (env) ->
 					setInterval( ( => @poll() ), @config.polling * 1000)
 				)
 			.catch((err) =>
-				env.logger.error(err)
+				env.logger.error("Slide API error: " + err.error.message)
 			)
 
 		onDiscover: (eventData) =>
@@ -93,7 +94,7 @@ module.exports = (env) ->
 				)
 			)
 			.catch((err) =>
-				env.logger.error(err)
+				env.logger.error("Slide API error: " + err.error.message)
 			)
 			@framework.deviceManager.discoverMessage( "pimatic-slide", "Loaded devices from Slide account")
 
@@ -121,7 +122,7 @@ module.exports = (env) ->
 			.then((data) =>
 			)
 			.catch((err) =>
-				env.logger.error(err)
+				env.logger.error("Slide API error: " + err.error.message)
 			)
 			return Promise.resolve()
 
