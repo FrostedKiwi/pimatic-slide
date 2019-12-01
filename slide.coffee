@@ -22,9 +22,6 @@ module.exports = (env) ->
 
 			@login(@config)
 
-			@poll()
-			if (@config.polling > 0)
-				setInterval( ( => @poll() ), @config.polling * 1000)
 
 			@framework.deviceManager.on "discover", @onDiscover
 
@@ -61,7 +58,10 @@ module.exports = (env) ->
 			.then((data) =>
 				@authKey = data.access_token
 				setTimeout( ( => @login(@config) ), 7 * 24 * 60 * 60 * 1000)
-			)
+				@poll()
+				if (@config.polling > 0)
+					setInterval( ( => @poll() ), @config.polling * 1000)
+				)
 			.catch((err) =>
 				env.logger.error(err)
 			)
