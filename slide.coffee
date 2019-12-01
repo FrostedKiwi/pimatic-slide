@@ -32,13 +32,18 @@ module.exports = (env) ->
 				headers:
 					Authorization: "Bearer " + @authKey
 				json: true
+				resolveWithFullResponse: true
+				simple: false
 			rp(options)
-			.then((data) =>
-				devices = @framework.deviceManager.getDevices()
-				data.slides.forEach((slide) =>
-					devices.forEach((device) =>
-						if device.config.slideId == slide.id
-							device._setDimlevel(slide.device_info.pos * 100)
+			.then((response) =>
+				if response.statusCode == 200 || response.statusCode == 424
+					data = response.body
+					devices = @framework.deviceManager.getDevices()
+					data.slides.forEach((slide) =>
+						devices.forEach((device) =>
+							if device.config.slideId == slide.id && slide.device_info.pos
+								device._setDimlevel(slide.device_info.pos * 100)
+						)
 					)
 				)
 			)
