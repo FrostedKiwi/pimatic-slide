@@ -7,11 +7,17 @@ module.exports = (env) ->
 	assert = env.require 'cassert'
 
 	rp = env.require 'request-promise'
+	fs = env.require 'fs.extra'
 
 	class SlidePlugin extends env.plugins.Plugin
 
 		init: (app, @framework, @config) =>
 			env.logger.info("Slide plugin loaded")
+
+			packageInfo = JSON.parse fs.readFileSync(
+				"./package.json", 'utf-8'
+			)
+			@userAgent = "Pimatic-Slide " + packageInfo.version
 
 			deviceConfigDef = require("./device-config-schema")
 
@@ -24,12 +30,13 @@ module.exports = (env) ->
 
 
 			@framework.deviceManager.on "discover", @onDiscover
-
+                
 		poll: =>
 			options =
 				uri: "https://api.goslide.io/api/slides/overview"
 				method: "GET"
 				headers:
+					"User-Agent": @userAgent,
 					Authorization: "Bearer " + @authKey
 				json: true
 				resolveWithFullResponse: true
@@ -53,9 +60,12 @@ module.exports = (env) ->
 			)
 
 		login: (@config) =>
+			plugin = this
 			options =
 				uri: "https://api.goslide.io/api/auth/login"
 				method: "POST"
+				headers:
+					"User-Agent": @userAgent
 				body:
 					email: @config.email
 					password: @config.password
@@ -69,7 +79,7 @@ module.exports = (env) ->
 					setInterval( ( => @poll() ), @config.polling * 1000)
 				)
 			.catch((err) =>
-				env.logger.error("Slide API error: " + err.error.message)
+				env.logger.error("Slide API error: " + err)
 			)
 
 		onDiscover: (eventData) =>
@@ -78,6 +88,7 @@ module.exports = (env) ->
 				uri: "https://api.goslide.io/api/slides/overview"
 				method: "GET"
 				headers:
+					"User-Agent": @userAgent,
 					Authorization: "Bearer " + @authKey
 				json: true
 			rp(options)
@@ -98,6 +109,7 @@ module.exports = (env) ->
 			)
 			@framework.deviceManager.discoverMessage( "pimatic-slide", "Loaded devices from Slide account")
 
+
 	class SlideCurtains extends env.devices.DimmerActuator
 
 		constructor: (@config, @plugin, lastState) ->
@@ -114,6 +126,7 @@ module.exports = (env) ->
 				uri: "https://api.goslide.io/api/slide/" + @config.slideId + "/position"
 				method: "POST"
 				headers:
+					"User-Agent": @userAgent,
 					Authorization: "Bearer " + @plugin.authKey
 				body:
 					pos: level / 100
