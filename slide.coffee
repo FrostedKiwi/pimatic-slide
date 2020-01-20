@@ -76,6 +76,8 @@ module.exports = (env) ->
 				setTimeout( ( => @login(@config) ), 7 * 24 * 60 * 60 * 1000)
 				@poll()
 				if (@config.polling > 0)
+					if (@config.polling < 300)
+						@config.polling = 300
 					setInterval( ( => @poll() ), @config.polling * 1000)
 				)
 			.catch((err) =>

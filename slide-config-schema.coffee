@@ -13,7 +13,7 @@ module.exports = {
       type: "string"
       default: ""
     polling:
-      description: "Interval in seconds for which the status of your Slides should be retrieved. Set to 0 to disable polling."
+      description: "Interval in seconds for which the status of your Slides should be retrieved. Set to 0 to disable polling. Minimum of 300 seconds because of rate limiting."
       type: "number"
-      default: 5
+      default: 300
 }
