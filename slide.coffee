@@ -7,16 +7,13 @@ module.exports = (env) ->
 	assert = env.require 'cassert'
 
 	rp = env.require 'request-promise'
-	fs = env.require 'fs.extra'
 
 	class SlidePlugin extends env.plugins.Plugin
 
 		init: (app, @framework, @config) =>
 			env.logger.info("Slide plugin loaded")
 
-			packageInfo = JSON.parse fs.readFileSync(
-				"./package.json", 'utf-8'
-			)
+			packageInfo = require("./package.json")
 			@userAgent = "Pimatic-Slide " + packageInfo.version
 
 			deviceConfigDef = require("./device-config-schema")
