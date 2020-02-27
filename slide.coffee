@@ -8,6 +8,10 @@ module.exports = (env) ->
 
 	rp = env.require 'request-promise'
 
+	extend = (obj, mixin) ->
+    obj[key] = value for key, value of mixin
+    obj
+
 	class SlidePlugin extends env.plugins.Plugin
 
 		init: (app, @framework, @config) =>
@@ -28,7 +32,7 @@ module.exports = (env) ->
 
 			@framework.deviceManager.on "discover", @onDiscover
                 
-		poll: =>
+		poll: (bypassCache) =>
 			options =
 				uri: "https://api.goslide.io/api/slides/overview"
 				method: "GET"
@@ -38,6 +42,8 @@ module.exports = (env) ->
 				json: true
 				resolveWithFullResponse: true
 				simple: false
+			if bypassCache
+				options.headers['IIM-Bypass-Cache'] = ''
 			rp(options)
 			.then((response) =>
 				if response.statusCode == 200 || response.statusCode == 424
@@ -71,11 +77,11 @@ module.exports = (env) ->
 			.then((data) =>
 				@authKey = data.access_token
 				setTimeout( ( => @login(@config) ), 7 * 24 * 60 * 60 * 1000)
-				@poll()
+				@poll(false)
 				if (@config.polling > 0)
 					if (@config.polling < 300)
 						@config.polling = 300
-					setInterval( ( => @poll() ), @config.polling * 1000)
+					setInterval( ( => @poll(false) ), @config.polling * 1000)
 				)
 			.catch((err) =>
 				env.logger.error("Slide API error: " + err)
@@ -116,9 +122,14 @@ module.exports = (env) ->
 			@id = @config.id
 			@_dimlevel = lastState?.dimlevel?.value or 0
 			@_state = lastState?.state?.value or off
+			@extendActions()
 			super()
 
-		# Returns a promise that is fulfilled when done.
+		extendActions: () =>
+      @actions = extend (extend {}, @actions),
+        stopMovement:
+          description: "Stop movement of curtains"
+
 		changeDimlevelTo: (level) ->
 			@_setDimlevel(level)
 			options =
@@ -135,6 +146,23 @@ module.exports = (env) ->
 			)
 			.catch((err) =>
 				env.logger.error("Slide API error: " + err.error.message)
+			)
+			return Promise.resolve()
+
+		stopMovement: () ->
+			options =
+				uri: "https://api.goslide.io/api/slide/" + @config.slideId + "/stop"
+				method: "POST"
+				headers:
+					"User-Agent": @userAgent,
+					Authorization: "Bearer " + @plugin.authKey
+				json: true
+			rp(options)
+			.then((data) =>
+				@plugin.poll(true)
+			)
+			.catch((err) =>
+				env.logger.error("Slide API error: " + err)
 			)
 			return Promise.resolve()
 
